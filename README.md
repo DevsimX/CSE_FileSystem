@@ -1,6 +1,2 @@
-# CSE_FileSystem
-assignment1
-3 days
-a silly way
-not hard in fact
-easy to finish
+# CSE_FileSystem 
+ assignment1,easy to finish,so not many words to describe it,try to understand it by yourself.       
