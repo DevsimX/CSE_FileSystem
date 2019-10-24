@@ -31,12 +31,15 @@ int chksumfile_byinumber(struct unixfilesystem *fs, int inumber, void *chksum) {
     return -1;
   }
 
-  int size = inode_getsize(&in);//for inode 5 , size=7340032
-  for (int offset = 0; offset < size; offset += DISKIMG_SECTOR_SIZE) {//offset < 128
-    char buf[DISKIMG_SECTOR_SIZE];//char[512],size = 512
-    int bno = offset/DISKIMG_SECTOR_SIZE;//0
+  int size = inode_getsize(&in);
+  //get inode in's size.
+  for (int offset = 0; offset < size; offset += DISKIMG_SECTOR_SIZE) {
+      //read blocks stored by inode in one by one.
+    char buf[DISKIMG_SECTOR_SIZE];
+    int bno = offset/DISKIMG_SECTOR_SIZE;
+    //get the block's index number in inode's address array.
     int bytesMoved = file_getblock(fs, inumber, bno, buf);
-//    fprintf(stderr,"adasdasd%d%d\n",bytesMoved,offset);
+    //store the block's into buf(char [512])
     if (bytesMoved < 0){
         return -1;
     }
@@ -53,6 +56,7 @@ int chksumfile_byinumber(struct unixfilesystem *fs, int inumber, void *chksum) {
 
 int chksumfile_bypathname(struct unixfilesystem *fs, const char *pathname, void *chksum) {
   int inumber = pathname_lookup(fs, pathname);
+  //get a path's inode by its name
   if (inumber < 0) {
     return inumber;
   }

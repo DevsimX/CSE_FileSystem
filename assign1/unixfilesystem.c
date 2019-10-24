@@ -16,16 +16,12 @@ struct unixfilesystem *unixfilesystem_init(int dfd) {
   if (diskimg_readsector(dfd, BOOTBLOCK_SECTOR, bootblock) != DISKIMG_SECTOR_SIZE) {
     fprintf(stderr, "Error reading bootblock\n");
     return NULL;
-  }//read the content into the bootblock
-//  for(int mk = 0 ; mk < 256 ; mk++){
-//      printf("%x",bootblock[mk]);
-//      printf("\n");
-//  }
+  }
 
   if (bootblock[0] != BOOTBLOCK_MAGIC_NUM) {
     fprintf(stderr, "Bad magic number on disk(0x%x)\n", bootblock[0]);
     return NULL;
-  }//bootblock[0] is 107 , %x
+  }
 
   if (sizeof(struct filsys) != DISKIMG_SECTOR_SIZE) { 
     fprintf(stderr, "Warning: Superblock structure size (%zu) != SECTOR_SIZE\n",

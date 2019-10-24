@@ -22,8 +22,8 @@
 #define BOOTBLOCK_SECTOR    0
 #define SUPERBLOCK_SECTOR   1
 #define INODE_START_SECTOR  2
-#define ROOT_INUMBER        1 //root's inumber
-#define BOOTBLOCK_MAGIC_NUM 0407//8 jin zhi, 16 jin zhi is 107, 10jin zhi is 263
+#define ROOT_INUMBER        1
+#define BOOTBLOCK_MAGIC_NUM 0407
 
 struct unixfilesystem {
   int dfd; // Handle from the diskimg module to read the diskimg.

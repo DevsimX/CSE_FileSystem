@@ -10,78 +10,48 @@
  * Fetches the specified file block from the specified inode.
  * Returns the number of valid bytes in the block, -1 on error.
  */
-int file_getblock(struct unixfilesystem *fs, int inumber, int blockNum, void *buf) {// fs , 1 ,0 , char[512]
-    struct inode current_inode;
-    if(inode_iget(fs,inumber,&current_inode) < 0 || blockNum < 0){
+int file_getblock_ILARG(struct unixfilesystem *fs,struct inode currentInode,int blockNum,void *buf,int inodeSize);
+int file_getblock_not_ILARG(struct unixfilesystem *fs,struct inode currentInode,int blockNum,void *buf,int inodeSize);
+int file_getblock(struct unixfilesystem *fs, int inumber, int blockNum, void *buf) {
+    struct inode currentInode;
+    if(inode_iget(fs,inumber,&currentInode) < 0 || blockNum < 0){
+        //find the inode by its inumber
         return -1;
     }
-    int numall = inode_getsize(&current_inode);
-    if((current_inode.i_mode & ILARG) != 0){
-        uint16_t block_tmp[256];
-        uint16_t second_block_tmp[256];
-        int block_index;
-        uint16_t block_number;
-        int block_number_int;
-        if(blockNum <= 1791){
-            block_index = blockNum / 256;
-            if(diskimg_readsector(fs->dfd,current_inode.i_addr[block_index],block_tmp) == DISKIMG_SECTOR_SIZE){
-                block_number = block_tmp[blockNum-block_index*256];
-                block_number_int = block_number;
-                if(diskimg_readsector(fs->dfd,block_number_int,buf) == DISKIMG_SECTOR_SIZE){
-                    if(numall % 512 == 0)
-                        return 512;
-                    if(blockNum == numall / 512)
-                        return numall % 512;
-                    return 512;
-                }
-            }
-            return -1;
-        } else{
-            if(diskimg_readsector(fs->dfd,current_inode.i_addr[7],block_tmp) == DISKIMG_SECTOR_SIZE){
-                block_index = blockNum/256 - 7;
-                if(diskimg_readsector(fs->dfd,block_tmp[block_index],second_block_tmp) == DISKIMG_SECTOR_SIZE){
-                    block_number = second_block_tmp[blockNum-(block_index+7)*256];
-                    block_number_int = block_number;
-                    if(diskimg_readsector(fs->dfd,block_number_int,buf) == DISKIMG_SECTOR_SIZE){
-                        if(numall % 512 == 0)
-                            return 512;
-                        if(blockNum == numall / 512)
-                            return numall % 512;
-                        return 512;
-                    }
-                }
-                return -1;
-            }
-            return -1;
-        }
+    int inodeSize = inode_getsize(&currentInode);
+    //get the currentInode's size
+    if((currentInode.i_mode & ILARG) != 0){
+        return file_getblock_ILARG(fs,currentInode,blockNum,buf,inodeSize);
+        //if the file uses large addressing algorithm, run this.
     } else{
-        if(blockNum <= 7){
-            if(diskimg_readsector(fs->dfd,current_inode.i_addr[blockNum],buf) == DISKIMG_SECTOR_SIZE){
-                if(numall < 512)
-                    return numall;
-                if(numall % 512 == 0)
-                    return 512;
-                if(blockNum == numall / 512)
-                    return numall % 512;
-                return 512;
-            }
-            return -1;
-        }
+        return file_getblock_not_ILARG(fs,currentInode,blockNum,buf,inodeSize);
+        //if the file doesn't use large addressing algorithm, run this.
     }
-    return -1;
-//    if(diskimg_readsector(fs->dfd,SUPERBLOCK_SECTOR+(inumber-1)/16+1,inodeArray) == DISKIMG_SECTOR_SIZE) {
-//
-//        if(diskimg_readsector(fs->dfd,current_inode.i_addr[blockNum],buf) == DISKIMG_SECTOR_SIZE){
-//            int numall = inode_getsize(&current_inode);
-//            if(numall < 512)
-//                return numall;
-//            if(numall % 512 == 0)
-//                return 512;
-//            if(blockNum == numall / 512)
-//                return numall % 512;
-//            return 512;
-//        }
-//        return -1;
-//    }
-//    return -1;
+}
+int file_getblock_ILARG(struct unixfilesystem *fs,struct inode currentInode,int blockNum,void *buf,int inodeSize){
+    if(diskimg_readsector(fs->dfd,inode_indexlookup(fs,&currentInode,blockNum),buf) == DISKIMG_SECTOR_SIZE){
+        //Get the specified file block.
+        if(inodeSize % 512 == 0)
+            return 512;
+        //If size%512 == 0, it means every block's valid bytes is 512.
+        if(blockNum == inodeSize / 512)
+            return inodeSize % 512;
+        return 512;
+        //If size%512 !=0, it means instead of the last block, other block's valid bytes is 512 and the last block's valid bytes is size%512
+    } else
+        return -1;
+}
+int file_getblock_not_ILARG(struct unixfilesystem *fs,struct inode currentInode,int blockNum,void *buf,int inodeSize){
+    if(diskimg_readsector(fs->dfd,inode_indexlookup(fs,&currentInode,blockNum),buf) == DISKIMG_SECTOR_SIZE){
+        if(inodeSize < 512)
+            return inodeSize;
+        //If size < 512, just return it. Since there is only one block.
+        if(inodeSize % 512 == 0)
+            return 512;
+        if(blockNum == inodeSize / 512)
+            return inodeSize % 512;
+        //Look above(file_getblock_ILARG), it's same.
+        return 512;
+    } else
+        return -1;
 }

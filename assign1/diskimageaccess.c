@@ -47,15 +47,15 @@ int main(int argc, char *argv[]) {
   }
 
   char *diskpath = argv[optind];
-  int fd = diskimg_open(diskpath, 1);//fd is 3, if open successfully
-//  printf("%d",fd);
+  int fd = diskimg_open(diskpath, 1);
 
   if (fd < 0) {
     fprintf(stderr, "Can't open diskimagePath %s\n", diskpath);
     exit(EXIT_FAILURE);
   }
 
-  struct unixfilesystem *fs = unixfilesystem_init(fd);//initialize unix filesystem
+  struct unixfilesystem *fs = unixfilesystem_init(fd);
+  //initialize unix filesystem
   if (!fs) {
     fprintf(stderr, "Failed to initialize unix filesystem\n");
     exit(EXIT_FAILURE);
@@ -76,12 +76,6 @@ int main(int argc, char *argv[]) {
     printf("Superblock s_fsize %d\n",(int)fs->superblock.s_fsize);
     printf("Superblock s_nfree %d\n",(int)fs->superblock.s_nfree);
     printf("Superblock s_ninode %d\n",(int)fs->superblock.s_ninode);
-//    printf("%d\n",(int)fs->superblock.pad);
-//      printf("%d\n",(int)fs->superblock.s_flock);
-//      printf("%d\n",(int)fs->superblock.s_fmod);
-//      printf("%d\n",(int)fs->superblock.s_ilock);
-//      printf("%d\n",(int)fs->superblock.s_free);
-//      printf("%d\n",(int)fs->superblock.s_inode);
   }
 
   if (idumpFlag) DumpInodeChecksum(fs, stdout);
@@ -91,7 +85,6 @@ int main(int argc, char *argv[]) {
   if (err < 0) fprintf(stderr, "Error closing %s\n", argv[1]);
   free(fs);
   exit(EXIT_SUCCESS);
-  return 0;
 }
 
 /**
@@ -135,28 +128,17 @@ static void DumpInodeChecksum(struct unixfilesystem *fs, FILE *f) {
  */
 static void DumpPathAndChildren(struct unixfilesystem *fs, const char *pathname, int inumber, FILE *f) {
 
-    //filesystem , / , 1 , stdout
   struct inode in;
   if (inode_iget(fs, inumber, &in) < 0) {
     fprintf(stderr,"Can't read inode %d \n", inumber);
     return;
   }
   assert(in.i_mode & IALLOC);
-  char chksum1[CHKSUMFILE_SIZE];//char[20]
+  char chksum1[CHKSUMFILE_SIZE];
   if (chksumfile_byinumber(fs, inumber, chksum1) < 0) {
     fprintf(stderr,"Can't checksum inode %d path %s\n", inumber, pathname);
     return;
   }
-//  char abc[10];
-//  for(int i = 0 ; i < 10 ; i++){
-//      printf("%c\n",abc[i]);
-//  }
-//
-//  abc[0] = '0';
-//  abc[1] = '2';
-//    for(int i = 0 ; i < 10 ; i++){
-//        printf("%c\n",abc[i]);
-//    }
   char chksum2[CHKSUMFILE_SIZE];
   if (chksumfile_bypathname(fs, pathname, chksum2) < 0) {
     fprintf(stderr,"Can't checksum inode %d path %s\n", inumber, pathname);
@@ -185,7 +167,6 @@ static void DumpPathAndChildren(struct unixfilesystem *fs, const char *pathname,
 
       struct direntv6 direntries[10000];
       int numentries = GetDirEntries(fs, inumber, direntries, 10000);
-//      fprintf(stderr,"length:%d,name:%s\n",numentries,pathname);
       for (int i = 0; i < numentries; i++) {
         char *n =  direntries[i].d_name;
         if (n[0] == '.') {
@@ -248,14 +229,14 @@ static int GetDirEntries(struct unixfilesystem *fs, int inumber, struct direntv6
   }
 
   if (maxNumEntries < 1) return -1;
-  int size = inode_getsize(&in);//get current directory's size
+  int size = inode_getsize(&in);
 
   assert((size % sizeof(struct direntv6)) == 0);
 
   int count = 0;
   int numBlocks  = (size + DISKIMG_SECTOR_SIZE - 1) / DISKIMG_SECTOR_SIZE;
   char buf[DISKIMG_SECTOR_SIZE];
-  struct direntv6 *dir = (struct direntv6 *) buf;//this step is confusing
+  struct direntv6 *dir = (struct direntv6 *) buf;
   for (int bno = 0; bno < numBlocks; bno++) {
     int bytesLeft, numEntriesInBlock, i;
     bytesLeft = file_getblock(fs, inumber,bno,dir);
@@ -263,7 +244,7 @@ static int GetDirEntries(struct unixfilesystem *fs, int inumber, struct direntv6
       fprintf(stderr, "Error reading directory\n");
       return -1;
     }
-    numEntriesInBlock = bytesLeft/sizeof(struct direntv6); //bytesLeft/16
+    numEntriesInBlock = bytesLeft/sizeof(struct direntv6);
     for (i = 0; i <  numEntriesInBlock ; i++) { 
       entries[count] = dir[i];
       count++;
